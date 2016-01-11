@@ -1,7 +1,7 @@
 "use strict";
 
 const Hubot = require("hubot");
-const Discord = require("discord.js")
+const Discord = require("discord.js");
 
 class DiscordAdapter extends Hubot.Adapter {
   constructor(robot) {
@@ -31,8 +31,9 @@ class DiscordAdapter extends Hubot.Adapter {
 
     if (userData) {
       user = this.robot.brain.userForId(userData.id, userData);
-      this.robot.brain.data.users[ userData.id ].name = userData.username;
-      this.robot.brain.data.users[ userData.id ].room = roomData.name;
+      this.robot.brain.data.users[ userData.id ].name = `<@${userData.id}>`;
+      this.robot.brain.data.users[ userData.id ].room = `<#${roomData.id}>`;
+      this.robot.brain.data.users[ userData.id ].roomname = roomData.name;
       this.robot.brain.data.users[ userData.id ].pm = room.isPrivate;
     }
     return user;
@@ -49,6 +50,8 @@ class DiscordAdapter extends Hubot.Adapter {
   }
 
   onMessage(message) {
+    console.log("here!!!!");
+    
     /* ignore message from myself */
     if (this.client.user.id === message.author.id) return;
 
@@ -57,10 +60,18 @@ class DiscordAdapter extends Hubot.Adapter {
 
     let text = message.content;
     for (let mention of message.mentions) {
-      let re = new RegExp('<@' + mention.id + '>');
-      text = text.replace(re, '@' + mention.username);
+      if (mention.id === this.client.user.id) {
+        let re = new RegExp('<@' + mention.id + '>');
+        text = text.replace(re, '@' + this.robot.name);
+      }
     }
-    
+
+    console.log({
+      user,
+      text,
+      message_id: message.id
+    });
+      
     this.receive(new Hubot.TextMessage(user, text, message.id));
   }
 
