@@ -19,8 +19,9 @@ class DiscordAdapter extends Hubot.Adapter {
     this.client.on("message", (message) => this.onMessage(message));
     this.client.on("disconnected", () => this.onDisconnected());
     this.client.on("presence", (user, status, game_id) => this.onPresence(user, status, game_id));
+    this.client.on("error", (err) => this.onError(err));
 
-    this.client.login(this.options.email, this.options.password);
+    this.login();
   }
 
   ensureUserData(id, room) {
@@ -33,10 +34,15 @@ class DiscordAdapter extends Hubot.Adapter {
       user = this.robot.brain.userForId(userData.id, userData);
       this.robot.brain.data.users[ userData.id ].name = `<@${userData.id}>`;
       this.robot.brain.data.users[ userData.id ].room = `<#${roomData.id}>`;
-      this.robot.brain.data.users[ userData.id ].roomname = roomData.name;
+      this.robot.brain.data.users[ userData.id ].roomName = roomData.name;
+      this.robot.brain.data.users[ userData.id ].roomId = roomData.id;
       this.robot.brain.data.users[ userData.id ].pm = room.isPrivate;
     }
     return user;
+  }
+
+  login() {
+    this.client.login(this.options.email, this.options.password);
   }
 
   onReady() {
@@ -46,7 +52,12 @@ class DiscordAdapter extends Hubot.Adapter {
 
   onDisconnected() {
     this.robot.logger.info("Disconnected from server");
-    this.client.login(this.options.email, this.options.password);
+    this.login();
+  }
+
+  onError(err) {
+    this.robot.logger.error("Connection error: %s", err);
+    this.login();
   }
 
   onMessage(message) {
@@ -80,17 +91,15 @@ class DiscordAdapter extends Hubot.Adapter {
   }
 
   send(envelope, ...messages) {
-    let channelData = this.client.channels.getAll("name", envelope.room);
-    if (!channelData || channelData.length === 0) 
-      channelData = this.client.privateChannels.getAll("name", envelope.room);
+    console.log("*** send!");
 
-    if (!channelData || channelData.length === 0) {
-      this.robot.logger.error("cannot find channel object for %s", envelope.room);
-      return;
-    }
+    let m = envelope.room.match(/<#(.*?)>/);
+    if (m.length < 2) return;
+
+    const channelId = m[1];
 
     for (let msg of messages) {
-      this.client.sendMessage(channelData[0], msg, {}, (err, msg) => {
+      this.client.sendMessage(channelId, msg, {}, (err, msg) => {
         if (err) {
           this.robot.logger.error("msg sent error: %s", err);
         }
