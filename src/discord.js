@@ -61,8 +61,6 @@ class DiscordAdapter extends Hubot.Adapter {
   }
 
   onMessage(message) {
-    console.log("here!!!!");
-    
     /* ignore message from myself */
     if (this.client.user.id === message.author.id) return;
 
@@ -91,8 +89,6 @@ class DiscordAdapter extends Hubot.Adapter {
   }
 
   send(envelope, ...messages) {
-    console.log("*** send!");
-
     let m = envelope.room.match(/<#(.*?)>/);
     if (m.length < 2) return;
 
